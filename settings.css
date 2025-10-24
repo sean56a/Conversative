@@ -1,0 +1,547 @@
+/* Sidebar & main already styled in style.css, just style settings card */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+.container {
+  padding: 30px;
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    margin-top: -10px;
+}
+
+.settings-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 25px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.settings-card h2 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #333;
+}
+
+.profile-section {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.profile-section img {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  margin-right: 20px;
+  object-fit: cover;
+}
+
+.profile-info h3 {
+  margin-left: 10px;
+  font-size: 20px;
+  color: #111;
+}
+
+.profile-info p {
+  margin: 3px 0 0;
+  color: #555;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-item label {
+  font-size: 16px;
+  color: #333;
+}
+
+.setting-item input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+}
+
+.btn {
+  display: inline-block;
+  background: #0084ff;
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn:hover {
+  background: #006fd1;
+}
+
+.logout-btn {
+  background: #f44336;
+}
+
+.logout-btn:hover {
+  background: #d32f2f;
+}
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+:root{
+  --base-clr: #11121a;
+  --line-clr: #42434a;
+  --hover-clr: #222533;
+  --text-clr: #e6e6ef;
+  --accent-clr: #5e63ff;
+  --secondary-text-clr: #b0b3c1;
+}
+*{
+  margin: 0;
+  padding: 0;
+}
+html{
+  font-family: Poppins, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5rem;
+}
+#sidebar{
+  box-sizing: border-box;
+  height: 100vh;
+  width: 250px;
+  padding: 5px 1em;
+  background-color: var(--base-clr);
+  border-right: 1px solid var(--line-clr);
+
+  position: sticky;
+  top: 0;
+  align-self: start;
+  transition: 300ms ease-in-out;
+  overflow: hidden;
+  text-wrap: nowrap;
+}
+#sidebar.close{
+  padding: 5px;
+  width: 60px;
+}
+#sidebar ul{
+  list-style: none;
+}
+#sidebar > ul > li:first-child{
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+  .logo{
+    font-weight: 600;
+  }
+}
+#sidebar ul li.active a{
+  color: var(--accent-clr);
+
+  svg{
+    fill: var(--accent-clr);
+  }
+}
+
+#sidebar a, #sidebar .dropdown-btn, #sidebar .logo{
+  border-radius: .5em;
+  padding: .85em;
+  text-decoration: none;
+  color: var(--text-clr);
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
+.dropdown-btn{
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+#sidebar svg{
+  flex-shrink: 0;
+  fill: var(--text-clr);
+}
+#sidebar a span, #sidebar .dropdown-btn span{
+  flex-grow: 1;
+}
+#sidebar a:hover, #sidebar .dropdown-btn:hover{
+  background-color: var(--hover-clr);
+}
+#sidebar .sub-menu{
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: 300ms ease-in-out;
+
+  > div{
+    overflow: hidden;
+  }
+}
+#sidebar .sub-menu.show{
+  grid-template-rows: 1fr;
+}
+.dropdown-btn svg{
+  transition: 200ms ease;
+}
+.rotate svg:last-child{
+  rotate: 180deg;
+}
+#sidebar .sub-menu a{
+  padding-left: 2em;
+}
+#toggle-btn{
+  margin-left: auto;
+  padding: 1em;
+  border: none;
+  border-radius: .5em;
+  background: none;
+  cursor: pointer;
+
+  svg{
+    transition: rotate 150ms ease;
+  }
+}
+#toggle-btn:hover{
+  background-color: var(--hover-clr);
+}
+
+main{
+  padding: min(30px, 7%);
+}
+main p{
+  color: var(--secondary-text-clr);
+  margin-top: 5px;
+  margin-bottom: 15px;
+}
+.container{
+  border: 1px solid var(--line-clr);
+  border-radius: 1em;
+  margin-bottom: 20px;
+  padding: min(3em, 15%);
+
+   p { margin-left: 10px; }
+}
+
+@media(max-width: 800px){
+  body{
+    grid-template-columns: 1fr;
+  }
+  main{
+    padding: 2em 1em 60px 1em;
+  }
+  .container{
+    border: none;
+    padding: 0;
+  }
+  #sidebar{
+    height: 60px;
+    width: 100%;
+    border-right: none;
+    border-top: 1px solid var(--line-clr);
+    padding: 0;
+    position: fixed;
+    top: unset;
+    bottom: 0;
+
+    > ul{
+      padding: 0;
+      display: grid;
+      grid-auto-columns: 60px;
+      grid-auto-flow: column;
+      align-items: center;
+      overflow-x: scroll;
+    }
+    ul li{
+      height: 100%;
+    }
+    ul a, ul .dropdown-btn{
+      width: 60px;
+      height: 60px;
+      padding: 0;
+      border-radius: 0;
+      justify-content: center;
+    }
+
+    ul li span, ul li:first-child, .dropdown-btn svg:last-child{
+      display: none;
+    }
+
+    ul li .sub-menu.show{
+      position: fixed;
+      bottom: 60px;
+      left: 0;
+      box-sizing: border-box;
+      height: 60px;
+      width: 100%;
+      background-color: var(--hover-clr);
+      border-top: 1px solid var(--line-clr);
+      display: flex;
+      justify-content: center;
+
+      > div{
+        overflow-x: auto;
+      }
+      li{
+        display: inline-flex;
+      }
+      a{
+        box-sizing: border-box;
+        padding: 1em;
+        width: auto;
+        justify-content: center;
+      }
+    }
+  }
+}/* Chatbox container */
+/* Prevent images in chatbox from enlarging */
+#chat-box img {
+  transition: none !important;  /* disable any inherited transitions */
+  width: 50px;                  /* or whatever size you want */
+  height: 50px;
+  object-fit: cover;
+  border-radius: 50%;           /* optional, for avatars */
+}
+.clickable-avatar {
+  transition: 0.3s ease; /* keep for profile only */
+}
+
+/* Individual messages */
+#chat-box div {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  max-width: 70%;
+  word-wrap: break-word;
+  font-size: 0.95rem;
+  line-height: 1.25rem;
+  display: inline-block;
+}
+
+/* Messages from logged-in user */
+#chat-box div.self-end {
+  background-color: #dbeafe; /* blue-100 */
+  color: #1e3a8a; /* blue-900 */
+  align-self: flex-end;
+  margin-left: auto;
+}
+
+/* Messages from other users */
+#chat-box div.self-start {
+  background-color: #ffffff; /* white */
+  color: #1f2937; /* gray-800 */
+  align-self: flex-start;
+  margin-right: auto;
+}
+
+/* Timestamp styling */
+#chat-box div .timestamp {
+  font-size: 0.7rem;
+  color: #6b7280; /* gray-500 */
+  text-align: right;
+  margin-top: 0.25rem;
+}
+
+/* Chat form */
+#chat-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+#chat-form input[type="text"] {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 0.5rem;
+  outline: none;
+  font-size: 0.95rem;
+}
+
+#chat-form input[type="text"]:focus {
+  border-color: #6366f1; /* blue-500 */
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+#chat-form button {
+  padding: 0.75rem 1.5rem;
+  background-color: #6366f1; /* blue-500 */
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+#chat-form button:hover {
+  background-color: #4f46e5; /* blue-600 */
+}
+#gif-picker img {
+  object-fit: cover;
+}
+#gif-btn {
+  font-weight: bold;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+/* Profile Avatar */
+.profile-section {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.profile-section label {
+  position: relative;
+  display: inline-block;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* Avatar image */
+.clickable-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  transition: 0.3s ease;
+}
+
+/* Always-visible text (black by default) */
+.profile-section label::before {
+  content: "Add Photo";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  color: #000; /* black when not hovered */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  pointer-events: none;
+  z-index: 2;
+  transition: color 0.3s ease;
+}
+
+/* Gray overlay & text turns white on hover */
+.profile-section label:hover::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.3); /* gray overlay */
+  pointer-events: none;
+  z-index: 1;
+}
+
+.profile-section label:hover::before {
+  color: #fff; /* text turns white on hover */
+}
+/* Hide "Add Photo" text if avatar exists */
+.profile-section.has-avatar label::before {
+  display: none;
+}
+
+/* Keep it visible on hover with gray overlay */
+.profile-section.has-avatar label:hover::before {
+  display: flex;
+  color: #fff;
+}
+
+.profile-section.has-avatar label:hover::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.3); /* gray overlay */
+  pointer-events: none;
+  z-index: 1;
+}
+/* Default body (light mode) */
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  background-color: #f5f5f5; /* light mode background */
+  color: #111; /* light mode text */
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Dark mode body */
+body.dark {
+  background-color: var(--base-clr); /* #11121a */
+  color: var(--text-clr);            /* #e6e6ef */
+}
+
+/* Sidebar dark mode */
+body.dark #sidebar {
+  background-color: var(--base-clr);
+  border-right: 1px solid var(--line-clr);
+}
+
+/* Settings card dark mode */
+body.dark .settings-card {
+  background-color: #1a1b2a; /* slightly lighter than body */
+  color: var(--text-clr);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+/* Text inside settings card */
+body.dark .settings-card h2,
+body.dark .profile-info h3,
+body.dark .profile-info p,
+body.dark .setting-item label {
+  color: var(--text-clr);
+}
+
+/* Inputs dark mode */
+body.dark .styled-input {
+  background-color: #222533;
+  color: var(--text-clr);
+  border-color: var(--line-clr);
+}
+
+body.dark .styled-input:focus {
+  border-color: var(--accent-clr);
+  box-shadow: 0 0 5px var(--accent-clr)50;
+}
+
+/* Buttons dark mode */
+body.dark .btn {
+  background-color: var(--accent-clr);
+  color: #fff;
+}
+
+body.dark .btn:hover {
+  background-color: #4548d9; /* darker shade for hover */
+}
+
+/* Optional: container borders in dark mode */
+body.dark .container {
+  border-color: var(--line-clr);
+  background-color: transparent; /* keep container background consistent */
+}
