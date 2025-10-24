@@ -3,6 +3,7 @@ session_start();
 require 'db.php';
 date_default_timezone_set('Asia/Manila');
 
+
 // Composer autoload
 $autoload = __DIR__ . '/vendor/autoload.php';
 if (!file_exists($autoload)) {
@@ -27,141 +28,146 @@ function json_response(array $arr)
     exit;
 }
 
+// --- Send verification email helper ---
+function send_verification_email(string $to, string $subject, string $body): bool
+{
+    try {
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com';
+        $mail->SMTPAuth = true;
+        $mail->Username = 'seanariel56@gmail.com';
+        $mail->Password = 'fvhwztahvhnfpxjw';
+        $mail->SMTPSecure = 'tls';
+        $mail->Port = 587;
+        $mail->setFrom('seanariel56@gmail.com', 'Conversative');
+        $mail->addAddress($to);
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body = $body;
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log($e->getMessage());
+        return false;
+    }
+}
+
 // -----------------------------
 // Handle AJAX requests
 // -----------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $user_id = $_SESSION['user_id'];
 
-    // ----------- PASSWORD CHANGE / VERIFY -----------
-    if ($_POST['ajax'] === '1') {
+// ----------- PASSWORD CHANGE / VERIFY -----------
+if ($_POST['ajax'] === '1') {
+    $user_id = $_SESSION['user_id'];
 
-        // Step 1: send verification
-        if (isset($_POST['new_password'], $_POST['confirm_password'])) {
-            $new_password = trim($_POST['new_password']);
-            $confirm_password = trim($_POST['confirm_password']);
+    // Fetch user email from DB
+    $stmt = $pdo->prepare("SELECT email FROM users WHERE id=?");
+    $stmt->execute([$user_id]);
+    $email = $stmt->fetchColumn();
+    if (!$email) {
+        json_response(['status'=>'error','message'=>'Email not found.']);
+    }
 
-            if ($new_password === '' || $confirm_password === '') {
-                json_response(['status' => 'error', 'message' => 'Please fill out all fields.']);
+    // === Step 2: verify code ===
+    if (isset($_POST['verify_code'])) {
+        $code = trim($_POST['verify_code']);
+        if (!$code) json_response(['status'=>'error','message'=>'Enter verification code.']);
+
+        $stmt = $pdo->prepare("
+            SELECT * FROM two_factor_codes
+            WHERE user_id=? AND code=? AND purpose='password_change' AND expires_at > NOW()
+            ORDER BY created_at DESC LIMIT 1
+        ");
+        $stmt->execute([$user_id, $code]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($row && !empty($row['extra_data'])) {
+            $pdo->prepare("UPDATE users SET password=? WHERE id=?")->execute([$row['extra_data'], $user_id]);
+            $pdo->prepare("DELETE FROM two_factor_codes WHERE user_id=? AND purpose='password_change'")->execute([$user_id]);
+            json_response(['status'=>'success','message'=>'Password changed successfully!']);
+        } else {
+            json_response(['status'=>'error','message'=>'Invalid or expired verification code.']);
+        }
+    }
+
+    // === Step 1: send verification code ===
+    if (isset($_POST['new_password'], $_POST['confirm_password'])) {
+        $new_password = trim($_POST['new_password']);
+        $confirm_password = trim($_POST['confirm_password']);
+
+        if (!$new_password || !$confirm_password) {
+            json_response(['status'=>'error','message'=>'Please fill out all fields.']);
+        }
+        if ($new_password !== $confirm_password) {
+            json_response(['status'=>'error','message'=>'Passwords do not match.']);
+        }
+
+        // check if new password is same as current
+        $stmt = $pdo->prepare("SELECT password FROM users WHERE id=?");
+        $stmt->execute([$user_id]);
+        $current_hash = $stmt->fetchColumn();
+        if ($current_hash && password_verify($new_password, $current_hash)) {
+            json_response(['status'=>'error','message'=>'New password cannot be the same as current password.']);
+        }
+
+        // remove old codes and generate new
+        $pdo->prepare("DELETE FROM two_factor_codes WHERE user_id=? AND purpose='password_change'")->execute([$user_id]);
+        $code = random_int(100000, 999999);
+        $stmt = $pdo->prepare("
+            INSERT INTO two_factor_codes (user_id, code, purpose, extra_data, expires_at, created_at)
+            VALUES (?, ?, 'password_change', ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), NOW())
+        ");
+        $stmt->execute([$user_id, $code, password_hash($new_password, PASSWORD_DEFAULT)]);
+
+        $subject = 'Password Change Verification Code';
+        $body = "Your password change verification code is: <strong>$code</strong><br>Expires in 10 minutes.";
+
+        if (send_verification_email($email, $subject, $body)) {
+            json_response(['status'=>'success','message'=>'Verification code sent to your email.']);
+        } else {
+            json_response(['status'=>'error','message'=>'Failed to send verification email.']);
+        }
+    }
+
+    json_response(['status'=>'error','message'=>'Invalid password change request.']);
+}
+
+
+
+
+
+    // ----------- EMAIL CHANGE / VERIFY -----------
+    if ($_POST['ajax'] === '2') {
+        if (isset($_POST['new_email'])) {
+            $new_email = trim($_POST['new_email']);
+            if (!filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
+                json_response(['status' => 'error', 'message' => 'Invalid email address.']);
             }
-            if ($new_password !== $confirm_password) {
-                json_response(['status' => 'error', 'message' => 'Passwords do not match.']);
-            }
 
-            $stmt = $pdo->prepare("SELECT password FROM users WHERE id=?");
-            $stmt->execute([$user_id]);
-            $current = $stmt->fetchColumn();
+            $pdo->prepare("DELETE FROM two_factor_codes WHERE user_id=? AND purpose='email_change'")->execute([$user_id]);
+            $code = random_int(100000, 999999);
+            $stmt = $pdo->prepare("
+                INSERT INTO two_factor_codes (user_id, code, purpose, extra_data, expires_at, created_at)
+                VALUES (?, ?, 'email_change', ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), NOW())
+            ");
+            $stmt->execute([$user_id, $code, $new_email]);
 
-            if ($current && password_verify($new_password, $current)) {
-                json_response(['status' => 'error', 'message' => 'New password cannot be the same as current password.']);
-            }
+            $subject = 'Email Change Verification Code';
+            $body = "Your email change verification code is: <strong>" . htmlspecialchars($code) . "</strong><br><small>Expires in 10 minutes.</small>";
 
-            try {
-                // Remove old codes
-                $pdo->prepare("DELETE FROM two_factor_codes WHERE user_id=? AND purpose='password_change'")->execute([$user_id]);
-
-                // Generate code
-                $code = random_int(100000, 999999);
-                $stmt = $pdo->prepare("
-                    INSERT INTO two_factor_codes (user_id, code, purpose, extra_data, expires_at, created_at)
-                    VALUES (?, ?, 'password_change', ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), NOW())
-                ");
-                $stmt->execute([$user_id, $code, password_hash($new_password, PASSWORD_DEFAULT)]);
-
-                // Send email
-                $mail = new PHPMailer(true);
-                $mail->isSMTP();
-                $mail->Host = 'smtp.gmail.com';
-                $mail->SMTPAuth = true;
-                $mail->Username = 'seanariel56@gmail.com';
-                $mail->Password = 'fvhwztahvhnfpxjw';
-                $mail->SMTPSecure = 'tls';
-                $mail->Port = 587;
-                $mail->setFrom('seanariel56@gmail.com', 'Conversative');
-                $mail->addAddress($_SESSION['email'] ?? '');
-                $mail->isHTML(true);
-                $mail->Subject = 'Password Change Verification Code';
-                $mail->Body = 'Your password change verification code is: <strong>' . htmlspecialchars($code) . '</strong><br><small>Expires in 10 minutes.</small>';
-                $mail->send();
-
-                json_response(['status' => 'success', 'message' => 'Verification code sent to your email.']);
-            } catch (Exception $e) {
-                error_log($e->getMessage());
+            if (send_verification_email($new_email, $subject, $body)) {
+                json_response(['status' => 'success', 'message' => 'Verification code sent to new email.']);
+            } else {
                 json_response(['status' => 'error', 'message' => 'Failed to send verification email.']);
             }
         }
 
-        // Step 2: verify code
-        if (isset($_POST['verify_code'])) {
-            $code = trim($_POST['verify_code']);
-            if ($code === '') json_response(['status' => 'error', 'message' => 'Enter the verification code.']);
-
-            $stmt = $pdo->prepare("
-                SELECT * FROM two_factor_codes
-                WHERE user_id=? AND code=? AND purpose='password_change' AND expires_at > NOW()
-                ORDER BY created_at DESC LIMIT 1
-            ");
-            $stmt->execute([$user_id, $code]);
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($row && !empty($row['extra_data'])) {
-                $pdo->prepare("UPDATE users SET password=? WHERE id=?")->execute([$row['extra_data'], $user_id]);
-                $pdo->prepare("DELETE FROM two_factor_codes WHERE user_id=? AND purpose='password_change'")->execute([$user_id]);
-                json_response(['status' => 'success', 'message' => 'Password changed successfully!']);
-            } else {
-                json_response(['status' => 'error', 'message' => 'Invalid or expired verification code.']);
-            }
-        }
-
-        json_response(['status' => 'error', 'message' => 'Invalid password change request.']);
-    }
-
-    // ----------- EMAIL CHANGE / VERIFY -----------
-    if ($_POST['ajax'] === '2') {
-
-        // Step 1: send verification
-        if (isset($_POST['new_email'])) {
-            $new_email = trim($_POST['new_email']);
-            if (!filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
-                json_response(['status'=>'error','message'=>'Invalid email address.']);
-            }
-
-            try {
-                $pdo->prepare("DELETE FROM two_factor_codes WHERE user_id=? AND purpose='email_change'")->execute([$user_id]);
-
-                $code = random_int(100000, 999999);
-                $stmt = $pdo->prepare("
-                    INSERT INTO two_factor_codes (user_id, code, purpose, extra_data, expires_at, created_at)
-                    VALUES (?, ?, 'email_change', ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), NOW())
-                ");
-                $stmt->execute([$user_id, $code, $new_email]);
-
-                $mail = new PHPMailer(true);
-                $mail->isSMTP();
-                $mail->Host = 'smtp.gmail.com';
-                $mail->SMTPAuth = true;
-                $mail->Username = 'seanariel56@gmail.com';
-                $mail->Password = 'fvhwztahvhnfpxjw';
-                $mail->SMTPSecure = 'tls';
-                $mail->Port = 587;
-                $mail->setFrom('seanariel56@gmail.com', 'Conversative');
-                $mail->addAddress($new_email);
-                $mail->isHTML(true);
-                $mail->Subject = 'Email Change Verification Code';
-                $mail->Body = 'Your email change verification code is: <strong>' . htmlspecialchars($code) . '</strong><br><small>Expires in 10 minutes.</small>';
-                $mail->send();
-
-                json_response(['status'=>'success','message'=>'Verification code sent to new email.']);
-            } catch (Exception $e) {
-                error_log($e->getMessage());
-                json_response(['status'=>'error','message'=>'Failed to send verification email.']);
-            }
-        }
-
-        // Step 2: verify code
         if (isset($_POST['verify_code_email'])) {
             $code = trim($_POST['verify_code_email']);
-            if ($code === '') json_response(['status'=>'error','message'=>'Enter verification code.']);
+            if (!$code) json_response(['status' => 'error', 'message' => 'Enter verification code.']);
 
             $stmt = $pdo->prepare("
                 SELECT * FROM two_factor_codes
@@ -174,28 +180,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             if ($row && !empty($row['extra_data'])) {
                 $pdo->prepare("UPDATE users SET email=? WHERE id=?")->execute([$row['extra_data'], $user_id]);
                 $pdo->prepare("DELETE FROM two_factor_codes WHERE user_id=? AND purpose='email_change'")->execute([$user_id]);
-                json_response(['status'=>'success','message'=>'Email updated successfully!']);
+                json_response(['status' => 'success', 'message' => 'Email updated successfully!']);
             } else {
-                json_response(['status'=>'error','message'=>'Invalid or expired verification code.']);
+                json_response(['status' => 'error', 'message' => 'Invalid or expired verification code.']);
             }
         }
 
-        json_response(['status'=>'error','message'=>'Invalid email change request.']);
+        json_response(['status' => 'error', 'message' => 'Invalid email change request.']);
     }
 
     // ----------- NAME CHANGE -----------
     if ($_POST['ajax'] === '3') {
         $first_name = trim($_POST['first_name'] ?? '');
         $last_name = trim($_POST['last_name'] ?? '');
-        if ($first_name === '' || $last_name === '') {
-            json_response(['status'=>'error','message'=>'First and last name cannot be empty.']);
+        if (!$first_name || !$last_name) {
+            json_response(['status' => 'error', 'message' => 'First and last name cannot be empty.']);
         }
         $stmt = $pdo->prepare("UPDATE users SET first_name=?, last_name=? WHERE id=?");
         $stmt->execute([$first_name, $last_name, $user_id]);
-        json_response(['status'=>'success','message'=>'Name updated successfully!']);
+        json_response(['status' => 'success', 'message' => 'Name updated successfully!']);
     }
 
-    json_response(['status'=>'error','message'=>'Unknown AJAX request.']);
+    json_response(['status' => 'error', 'message' => 'Unknown AJAX request.']);
 }
 
 // -----------------------------
@@ -225,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar'])) {
 }
 
 // -----------------------------
-// FETCH USER INFO (for HTML rendering)
+// FETCH USER INFO
 // -----------------------------
 $stmt = $pdo->prepare("SELECT * FROM users WHERE id=?");
 $stmt->execute([$_SESSION['user_id']]);
